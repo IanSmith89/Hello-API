@@ -3,10 +3,13 @@
 var fs = require('fs');
 var http = require('http');
 
-//TODO include monk
-//TODO get db instance (or you could do both in one line)
+// include monk
+// get db instance (or you could do both in one line)
+var db = require('monk')('localhost/helloDb');
 //NOTE: ensure the mongod daemon is running
-//TODO get collection, might have to use mongo shell to create collection
+// get collection, might have to use mongo shell to create collection
+
+var createdFiles = db.get('createdFiles');
 
 
 // create a server using http
@@ -19,8 +22,8 @@ server.listen(8000, function() {
 
 function handleRequest(req, res) {
 
-	//TODO add route for `api/get`
-	//TODO add route for `api/create`
+	// add route for `api/get`
+	// add route for `api/create`
   if (req.url === '/' || req.url === '/index.html') {
 
     res.setHeader("Content-Type", "text/html");
@@ -31,14 +34,40 @@ function handleRequest(req, res) {
     res.setHeader("Content-Type", "text/javascript");
     fetchFile(req, res, './app.js');
 
-  } else if (req.url === '/api'){
-		//TODO remove me
-  } else {
+  } else if (req.url === '/api/create') {
+
+		res.setHeader("Content-Type", "application/json");
+		createdFiles.insert({
+			name: 'Ian',
+			age: 26
+		}, function(err, data) {
+			if (err) {
+				respondError(req, res);
+			}
+			var doc = JSON.stringify(data);
+			res.statusCode = 200;
+			res.write(doc);
+			res.end();
+		});
+
+	} else if (req.url === '/api/get') {
+
+		res.setHeader("Content-Type", "application/json");
+		createdFiles.find({}, function(err, data) {
+			if (err) {
+				respondError(req, res);
+			}
+			var doc = JSON.stringify(data);
+			res.statusCode = 200;
+			res.write(doc);
+			res.end();
+
+		});
+
+	} else {
     respondError(req, res);
   }
 }
-
-
 
 function fetchFile(req, res, filename){
   //read a file asynchronously using fs. Once the file has been read fs will
@@ -64,6 +93,6 @@ function handleFileLoad(req, res, err, data){
 
 function respondError(req, res) {
   res.statusCode = 404;
-  res.write('<h1>404: The item you requested does not exist.');
+  res.write('<h1>404: The item you requested does not exist.</h1>');
   res.end();
 }
